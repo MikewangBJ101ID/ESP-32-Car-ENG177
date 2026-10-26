@@ -4,8 +4,22 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 
+
+/*
+
+WIRING: CONNECT 27 -> BUTTON 1 IN -> BUTTON 1 OUT -> GND and set 27 to INPUT_PULLUP
+                26 -> BUTTON 2 IN -> BUTTON 1 OUT -> GND and set 26 to INPUT_PULLUP
+When button 1 (27) is pressed, a signal of 1 will be continually sent by the controller. The raw message will contain the data "1" stored in uint8_t form
+When button 2 (26) is pressed, a signal of 2 will be continually sent, the same as above.
+****Button 1 overwrites button 2****.
+When no button is pressed, a signal of 0 will be continually sent.
+
+For controller 2, the wiring should be the same but the signal will be changed to 0, 3, and 4.
+*/
+
 #define NODE_ID 1 //The ID of this board
-#define BUTTON_PIN 27 //The pin to read from
+#define BUTTON_PIN_1 27 //BUTTON 1
+#define BUTTON_PIN_2 26 //BUTTON 2
 #define WIFI_CHANNEL 6
 #define DATA_SEND_INTERVAL 15 //how many milliseconds in between each message
 
@@ -29,7 +43,8 @@ void setup() {
   Serial.print("MAC Address: ");
   Serial.println(WiFi.macAddress());
 
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_PIN_1, INPUT_PULLUP);
+  pinMode(BUTTON_PIN_2, INPUT_PULLUP);
 
   // Start ESP-NOW
   if (esp_now_init() != ESP_OK) {
@@ -54,23 +69,12 @@ void setup() {
 
 void send_message(int id){
   // Send a signal to the other ESP32 device
-  // This will need to be adjusted based on your specific ESP32 devices and ESP-NOW setup
-  /*
-  esp_now_peer_info_t peerInfo;
-  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
-  peerInfo.channel = 0;  
-  peerInfo.encrypt = false;
-  
-  if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add peer");
-    return;
-  }
-  */
   // Send message
   uint8_t msg = id;
   esp_err_t result = esp_now_send(broadcastAddress, &msg, sizeof(msg));
   
   if (result == ESP_OK) {
+    Serial.print("Sent Message: ");
     Serial.println(id);
   } else {
     Serial.println("Error sending the data");
@@ -79,14 +83,19 @@ void send_message(int id){
 
 void loop() {
   // Send one message every main loop
-  int button_states = digitalRead(BUTTON_PIN);
+  int button_states_1 = digitalRead(BUTTON_PIN_1);
+  int button_states_2 = digitalRead(BUTTON_PIN_2);
   if(millis() - nextSend >= 0){
-    Serial.println(button_states);
-    if (button_states){
-      send_message(0);
-    }
-    else{
+    //Serial.print("Button State: ");
+    //Serial.println(button_states);
+    if (!button_states_1){
       send_message(1);
+    }
+    else if (!button_states_2){
+      send_message(2);
+    }
+    else {
+      send_message(0);
     }
     nextSend = millis() + DATA_SEND_INTERVAL;
   }
