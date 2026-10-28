@@ -14,7 +14,7 @@ When button 2 (26) is pressed, a signal of 2 will be continually sent, the same 
 ****Button 1 overwrites button 2****.
 When no button is pressed, a signal of 0 will be continually sent.
 
-For controller 2, the wiring should be the same but the signal will be changed to 0, 3, and 4.
+For controller 2, the wiring should be the same but the signal will be changed to 3, 4, and 5.
 */
 
 #define NODE_ID 1 //The ID of this board
@@ -85,7 +85,7 @@ void loop() {
   // Send one message every main loop
   int button_states_1 = digitalRead(BUTTON_PIN_1);
   int button_states_2 = digitalRead(BUTTON_PIN_2);
-  if(millis() - nextSend >= 0){
+  if(millis() - nextSend >= DATA_SEND_INTERVAL){
     //Serial.print("Button State: ");
     //Serial.println(button_states);
     if (!button_states_1){

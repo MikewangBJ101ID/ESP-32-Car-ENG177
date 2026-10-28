@@ -3,6 +3,7 @@
 #include <esp_now.h>
 
 #define WIFI_CHANNEL 6 //The same as controller
+#define FORCE_SHUTDOWN_TIME 5000 //If no data packets have been received for 5000 ms, shut down the car
 
 typedef struct {
   uint8_t id;
@@ -10,6 +11,7 @@ typedef struct {
 } ReceivedMessage;
 
 QueueHandle_t messageQueue; //Queue for handling messages
+int last_packet_receive_time = 0;//last time receiving a packet
 
 void onDataRecv(const esp_now_recv_info_t *info,
                 const uint8_t *data,
@@ -29,6 +31,7 @@ void onDataRecv(const esp_now_recv_info_t *info,
   if (messageQueue != nullptr) {
     xQueueSend(messageQueue, &msg, 0);
   }
+  last_packet_receive_time = millis();
 }
 
 void setup() {
@@ -37,7 +40,7 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.setChannel(WIFI_CHANNEL);
 
-  messageQueue = xQueueCreate(20, sizeof(ReceivedMessage)); //Maximum 20 messages
+  messageQueue = xQueueCreate(200, sizeof(ReceivedMessage)); //Maximum 200 messages
 
   if (messageQueue == nullptr) {
     Serial.println("Queue creation failed");
@@ -54,27 +57,34 @@ void setup() {
   Serial.println("ESP-NOW receiver ready");
 }
 
+
 void loop() {
   ReceivedMessage msg;
+  if(millis() - last_packet_receive_time <= FORCE_SHUTDOWN_TIME){
+    while (xQueueReceive(messageQueue, &msg, 0) == pdTRUE) {
+      Serial.printf(
+        "Received ID: %u from %02X:%02X:%02X:%02X:%02X:%02X\n",
+        msg.id,
+        msg.mac[0], msg.mac[1], msg.mac[2],
+        msg.mac[3], msg.mac[4], msg.mac[5]
+      );
 
-  while (xQueueReceive(messageQueue, &msg, 0) == pdTRUE) {
-    Serial.printf(
-      "Received ID: %u from %02X:%02X:%02X:%02X:%02X:%02X\n",
-      msg.id,
-      msg.mac[0], msg.mac[1], msg.mac[2],
-      msg.mac[3], msg.mac[4], msg.mac[5]
-    );
+      /*CAR CONTROLLER LOGIC HERE*/
+      /*
+      msg.id can be 0, 1, 2, 3, 4:
+      0 - No buttons pressed on controller 1
+      1 - Button 1 on controller 1 pressed
+      2 - Button 2 on controller 1 pressed
+      3 - No buttons pressed on controller 2
+      4 - Button 1 on controller 2 pressed
+      5 - Button 2 on controller 2 pressed
+      */
+    }
+  }
+  else{
 
-    /*CAR CONTROLLER LOGIC HERE*/
-    /*
-    msg.id can be 0, 1, 2, 3, 4:
-    0 - No buttons pressed
-    1 - Button 1 on controller 1 pressed
-    2 - Button 2 on controller 2 pressed
-    3 - Button 1 on controller 2 pressed
-    4 - Button 2 on controller 2 pressed
-    Note that controllers 1 and 2 can both send 0, or one of them could send 0 and one of them could 
-    send another signal
-    */
+    //SAFETY precaution: No packets received in fixed period of time, controller may be down
+    //Shutdown the car or stop the car
+
   }
 }
