@@ -84,18 +84,20 @@ void loop() {
   // Send one message every main loop
   int button_states_1 = digitalRead(BUTTON_PIN_1);
   int button_states_2 = digitalRead(BUTTON_PIN_2);
-  if(millis() - nextSend >= DATA_SEND_INTERVAL){
+  if(millis() >= nextSend){{//Fixing: ensure that no underflow happens
     //Serial.print("Button State: ");
     //Serial.println(button_states);
+    int offset = (NODE_ID - 1) * 3;//this will ensure that each node has a unique set of signal values
     if (!button_states_1){
-      send_message(1);
+      send_message(1 + offset);
     }
     else if (!button_states_2){
-      send_message(2);
+      send_message(2+offset);
     }
     else {
-      send_message(0);
+      send_message(0+offset);
     }
     nextSend = millis() + DATA_SEND_INTERVAL;
+  }
   }
 }
