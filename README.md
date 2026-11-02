@@ -28,7 +28,6 @@ Throttle buttons                      Steering buttons
                          v
                  Vehicle ESP32 receiver
                  - ESP-NOW receive callback
-                 - FreeRTOS message queue
                  - Command processing (TODO)
                          |
                          v
@@ -50,12 +49,12 @@ Throttle buttons                      Steering buttons
 | Digital push buttons | 4 | Two command inputs per controller in the current firmware |
 | Four-wheel-drive robot chassis | 1 | Vehicle platform |
 | TT DC gear motors | 4 | Wheel propulsion |
-| Motor driver module | 1 or more, depending on the final wiring | Interfaces the receiver with the motors |
+| Motor driver module | 1 or 2 | Interfaces the receiver with the motors |
 | 7.4 V battery pack | 1 | Main vehicle power source |
 | 5 V DC-DC buck converter (LM2596 or equivalent) | 1 | Regulated supply for compatible electronics |
 | Jumper wires and connectors | As needed | Electrical connections |
 
-The project hardware plan identifies an **L298N motor driver**, but the committed firmware does not yet define motor-control pins or implement its interface. Confirm the actual module, current capacity, and wiring before connecting the motors.
+The project hardware plan identifies an **L298N motor driver**. 
 
 The code currently reads **digital buttons**, not analog joystick axes. A joystick-based control interface can be developed separately if selected for the final build.
 
