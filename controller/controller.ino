@@ -1,7 +1,8 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <esp_now.h>
-
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 
 
 /*
@@ -10,7 +11,7 @@ WIRING: CONNECT 27 -> BUTTON 1 IN -> BUTTON 1 OUT -> GND and set 27 to INPUT_PUL
                 26 -> BUTTON 2 IN -> BUTTON 1 OUT -> GND and set 26 to INPUT_PULLUP
 When button 1 (27) is pressed, a signal of 1 will be continually sent by the controller. The raw message will contain the data "1" stored in uint8_t form
 When button 2 (26) is pressed, a signal of 2 will be continually sent, the same as above.
-****Button 1 overwrites button 2****.
+****BUTTON 1 AND BUTTON 2 CAN BE SIMULTANEOUSLY PRESSED. IF THIS IS THE CASE, TWO PACKETS WILL BE SENT AT ONCE.****.
 When no button is pressed, a signal of 0 will be continually sent.
 
 For controller 2, the wiring should be the same but the signal will be changed to 3, 4, and 5.
@@ -84,20 +85,20 @@ void loop() {
   // Send one message every main loop
   int button_states_1 = digitalRead(BUTTON_PIN_1);
   int button_states_2 = digitalRead(BUTTON_PIN_2);
-  if(millis() >= nextSend){{//Fixing: ensure that no underflow happens
+  if(millis() - nextSend >= DATA_SEND_INTERVAL){
     //Serial.print("Button State: ");
     //Serial.println(button_states);
-    int offset = (NODE_ID - 1) * 3;//this will ensure that each node has a unique set of signal values
-    if (!button_states_1){
-      send_message(1 + offset);
-    }
-    else if (!button_states_2){
-      send_message(2+offset);
+    if (!button_states_1 || !button_states_2){
+      if (!button_states_1){
+        send_message(4);
+      }
+      if (!button_states_2){
+        send_message(5);
+      }
     }
     else {
-      send_message(0+offset);
+      send_message(3);
     }
     nextSend = millis() + DATA_SEND_INTERVAL;
-  }
   }
 }
