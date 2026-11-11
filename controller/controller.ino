@@ -83,9 +83,10 @@ void send_message(int id){
 //Generalizations
 #define APPLY_FIRST_BUTTON 0
 #define APPLY_SECOND_BUTTON 1
-#define FIRST_BUTTON_SIGNAL 4
-#define SECOND_BUTTON_SIGNAL 5
-#define EMPTY_SIGNAL 3
+#define FIRST_BUTTON_SIGNAL 1
+#define SECOND_BUTTON_SIGNAL 2
+
+#define EMPTY_SIGNAL 0
 bool button_to_apply = 0;
 void loop() {
   // Send one message every main loop
@@ -115,7 +116,7 @@ void loop() {
       }
     }
     else {
-      send_message(3);
+      send_message(EMPTY_SIGNAL);
     }
     nextSend = millis() + DATA_SEND_INTERVAL;
   }
