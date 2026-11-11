@@ -80,7 +80,13 @@ void send_message(int id){
     Serial.println("Error sending the data");
   }
 }
-
+//Generalizations
+#define APPLY_FIRST_BUTTON 0
+#define APPLY_SECOND_BUTTON 1
+#define FIRST_BUTTON_SIGNAL 4
+#define SECOND_BUTTON_SIGNAL 5
+#define EMPTY_SIGNAL 3
+bool button_to_apply = 0;
 void loop() {
   // Send one message every main loop
   int button_states_1 = digitalRead(BUTTON_PIN_1);
@@ -88,12 +94,24 @@ void loop() {
   if(millis() - nextSend >= DATA_SEND_INTERVAL){
     //Serial.print("Button State: ");
     //Serial.println(button_states);
-    if (!button_states_1 || !button_states_2){
+    if ((!button_states_1) && (!button_states_2)){
+      //two buttons pressed simultaneously
+      //send signals alternatively
+      if(button_to_apply == APPLY_FIRST_BUTTON){
+        send_message(FIRST_BUTTON_SIGNAL);
+      }
+      else {
+        //APPLY_SECOND_SIGNAL
+        send_message(SECOND_BUTTON_SIGNAL);
+      }
+      button_to_apply = !button_to_apply;
+    }
+    else if (!button_states_1 || !button_states_2){
       if (!button_states_1){
-        send_message(4);
+        send_message(FIRST_BUTTON_SIGNAL);
       }
       if (!button_states_2){
-        send_message(5);
+        send_message(SECOND_BUTTON_SIGNAL);
       }
     }
     else {
