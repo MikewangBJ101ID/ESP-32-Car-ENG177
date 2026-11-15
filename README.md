@@ -8,8 +8,8 @@ An ESP32-based, dual-controller remote-controlled car developed for **ENG 177** 
 
 DUODRIVE explores a collaborative driving interface in which **two independent wireless controllers operate one four-wheel-drive car**:
 
-- **Controller 1 — Throttle:** Sends commands intended for forward and reverse motion.
-- **Controller 2 — Steering:** Sends commands intended for left and right turns.
+- **Controller 1:** Sends commands intended for forward and left motion.
+- **Controller 2:** Sends commands intended for backward and right turns.
 - **Vehicle receiver:** Receives input from both controllers and will eventually translate the commands into motor outputs.
 
 The ESP32 boards communicate using **ESP-NOW**, a direct, low-overhead wireless protocol. The design does **not** require an internet connection or a Wi-Fi router.
@@ -94,20 +94,27 @@ The transmission interval is the intended software pacing, **not a guaranteed pa
 
 ### Command Mapping
 
-The controller sketch computes its command from `NODE_ID` and the two button states.
+Each controller packs the status of both of its buttons into a **single two-digit decimal value**, broadcast as a one-byte command. The **tens digit encodes Button 1** and the **ones digit encodes Button 2**. In practice, disjoint numbers are used to encode the states of buttons 1 and 2, so the mapping from digit number to button is not important in this case.
 
-| Controller | `NODE_ID` | Command byte | Meaning |
-| --- | ---: | ---: | --- |
-| Throttle | 1 | `0` | Neither button pressed |
-| Throttle | 1 | `1` | Button 1 pressed — intended forward |
-| Throttle | 1 | `2` | Button 2 pressed — intended reverse |
-| Steering | 2 | `3` | Neither button pressed |
-| Steering | 2 | `4` | Button 1 pressed — intended left |
-| Steering | 2 | `5` | Button 2 pressed — intended right |
+For each button, the digit depends on the controller:
+
+| Controller             | Button 1 → digit 1        | Button 2 → digit 0        |
+| ---------------------- | ------------------------- | ------------------------- |
+| Controller 1           | pressed `1`, released `3` | pressed `2`, released `4` |
+| Controller 2           | pressed `5`, released `7` | pressed `6`, released `8` |
+
+| Controller | Buttons  | Command | Meaning                                   |
+| ---------- | -------- | ------: | --------------------------- |
+| 1          | Neither  |    `34` | Keep Straight with Motor Not Turning      |
+| 1          | Button 1 |    `14` | Keep Straight with Motor Turning Forward  |
+| 1          | Button 2 |    `32` | Turn Left with Motor Not Turning          |
+| 1          | Both     |    `12` | Turn Left with Motor Turning Forward      |
+| 2          | Neither  |    `78` | Keep Straight with Motor Not Turning      |
+| 2          | Button 1 |    `58` | Keep Straight with Motor Turning Backward |
+| 2          | Button 2 |    `76` | Turn Right with Motor Not Turning         |
+| 2          | Both     |    `56` | Turn Right with Motor Turning Backward    |
 
 The direction labels describe the **planned vehicle behavior**. At present, the receiver prints the commands but does not drive motors.
-
-If both buttons on one controller are held simultaneously, **Button 1 takes priority** because the firmware checks Button 1 first.
 
 ### How the Receiver Processes Packets
 

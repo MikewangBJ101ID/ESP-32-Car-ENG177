@@ -8,13 +8,13 @@
 /*
 
 WIRING: CONNECT 27 -> BUTTON 1 IN -> BUTTON 1 OUT -> GND and set 27 to INPUT_PULLUP
-                26 -> BUTTON 2 IN -> BUTTON 1 OUT -> GND and set 26 to INPUT_PULLUP
+                26 -> BUTTON 2 IN -> BUTTON 2 OUT -> GND and set 26 to INPUT_PULLUP
 When button 1 (27) is pressed, a signal of 1 will be continually sent by the controller. The raw message will contain the data "1" stored in uint8_t form
 When button 2 (26) is pressed, a signal of 2 will be continually sent, the same as above.
-****BUTTON 1 AND BUTTON 2 CAN BE SIMULTANEOUSLY PRESSED. IF THIS IS THE CASE, TWO PACKETS WILL BE SENT AT ONCE.****.
-When no button is pressed, a signal of 0 will be continually sent.
-
-For controller 2, the wiring should be the same but the signal will be changed to 3, 4, and 5.
+When button 1 (27) is NOT pressed, a signal of 3 will be continually sent.
+When button 2 (26) is NOT pressed, a signal of 4 will be continually sent.
+**ONE PACKET CONTAINING TWO DIGITS WILL BE SENT IN A LOOP**
+**The 1st and 0th digits can be exchanged - 1 - 8 are distinct from each other.**
 */
 
 #define NODE_ID 1 //The ID of this board
@@ -81,13 +81,20 @@ void send_message(int id){
   }
 }
 //Generalizations
-#define APPLY_FIRST_BUTTON 0
-#define APPLY_SECOND_BUTTON 1
-#define FIRST_BUTTON_SIGNAL 1
-#define SECOND_BUTTON_SIGNAL 2
+#if NODE_IT == 1
+  #define FIRST_BUTTON_SIGNAL 1 //The signal to be broadcasted when button 1 is pressed.
+  #define SECOND_BUTTON_SIGNAL 2 //The signal to be broadcasted when button 2 is pressed.
+  #define FIRST_BUTTON_NOT_SIGNAL 3 //The signal to be broadcasted when button 1 is NOT pressed.
+  #define SECOND_BUTTON_NOT_SIGNAL 4 //The signal to be broadcasted when button 2 is NOT pressed.
+#else
+  #define FIRST_BUTTON_SIGNAL 5 //the same.
+  #define SECOND_BUTTON_SIGNAL 6
+  #define FIRST_BUTTON_NOT_SIGNAL 7
+  #define SECOND_BUTTON_NOT_SIGNAL 8
+#endif
+//Change for controller 2
 
-#define EMPTY_SIGNAL 0
-bool button_to_apply = 0;
+
 void loop() {
   // Send one message every main loop
   int button_states_1 = digitalRead(BUTTON_PIN_1);
@@ -95,29 +102,22 @@ void loop() {
   if(millis() - nextSend >= DATA_SEND_INTERVAL){
     //Serial.print("Button State: ");
     //Serial.println(button_states);
+    int this_msg = 0;
     if ((!button_states_1) && (!button_states_2)){
-      //two buttons pressed simultaneously
-      //send signals alternatively
-      if(button_to_apply == APPLY_FIRST_BUTTON){
-        send_message(FIRST_BUTTON_SIGNAL);
-      }
-      else {
-        //APPLY_SECOND_SIGNAL
-        send_message(SECOND_BUTTON_SIGNAL);
-      }
-      button_to_apply = !button_to_apply;
+      this_msg = FIRST_BUTTON_SIGNAL * 10 + SECOND_BUTTON_SIGNAL; //encoding
     }
     else if (!button_states_1 || !button_states_2){
       if (!button_states_1){
-        send_message(FIRST_BUTTON_SIGNAL);
+        this_msg = FIRST_BUTTON_SIGNAL * 10 + SECOND_BUTTON_NOT_SIGNAL;
       }
       if (!button_states_2){
-        send_message(SECOND_BUTTON_SIGNAL);
+        this_msg = FIRST_BUTTON_NOT_SIGNAL * 10 + SECOND_BUTTON_SIGNAL;
       }
     }
     else {
-      send_message(EMPTY_SIGNAL);
+      this_msg = FIRST_BUTTON_NOT_SIGNAL * 10 + SECOND_BUTTON_NOT_SIGNAL;
     }
+    send_message(this_msg);
     nextSend = millis() + DATA_SEND_INTERVAL;
   }
 }
