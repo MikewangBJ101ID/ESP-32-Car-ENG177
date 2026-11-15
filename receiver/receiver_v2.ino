@@ -178,6 +178,10 @@ L298NX2 myMotors(EN_A, IN1_A, IN2_A, EN_B, IN1_B, IN2_B);
 static const bool MOTOR_A_IS_LEFT = true;
 
 enum MotorIndex { MOTOR_A = 0, MOTOR_B = 1 };
+static bool is_left_motor(MotorIndex m);
+static void apply_motor(MotorIndex m, int speed);
+//Some mysterious errors. Somehow removing the above two lines will
+//throw a MotorIndex not declared error
 
 // Signed speed of each motor: >0 forward, <0 backward.
 static int motor_speed[2] = {0, 0};
