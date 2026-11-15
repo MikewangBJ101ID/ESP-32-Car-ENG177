@@ -66,11 +66,13 @@ ESP-32-Car-ENG177/
 │   └── controller.ino   # Transmitter firmware for either controller
 ├── receiver/
 │   └── receiver.ino     # ESP-NOW receiver and message queue
+│   └── receiver_v2.ino  # The vibed complete car control program to be tested
+│   └── test_car.ino     # The program for testing the motor control algorithm
 ├── LICENSE              # MIT License
 └── README.md            # Project documentation
 ```
 
-Both controller boards use the same sketch, but **each must be flashed with a different NODE_ID**.
+Both controller boards use the same sketch, but **each must be flashed with a different NODE_ID**. When flashing files in the receiver folder, make sure to **flash it in a new, different Arduino IDE Window, otherwise all three files will be recognized as a single source file, which will throw tons of `repeated declaration` errors**.
 
 ## Wireless Communication
 
@@ -177,7 +179,7 @@ Do not leave both controllers set to `NODE_ID 1`; their command ranges would ove
 
 ### 5. Flash the Vehicle Receiver
 
-1. Open `receiver/receiver.ino` in Arduino IDE.
+1. Open `receiver/receiver_v2.ino` in Arduino IDE.
 2. Select the vehicle ESP32 board and serial port.
 3. Compile and upload the sketch.
 4. Open its Serial Monitor at **115200 baud**.
@@ -234,7 +236,7 @@ This algorithm is a **design proposal**, not functionality in the current `recei
 
 ## Known Limitations
 
-- The receiver has **no implemented motor-control logic**.
+- ~~The receiver has **no implemented motor-control logic**.~~ In progress
 - The configured 5-second timeout does **not** actuate a motor shutdown.
 - Controller messages are broadcasts with **no encryption or application-level sender authentication**.
 - The receiver does not yet filter unexpected command values or verify the source MAC address.
