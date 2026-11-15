@@ -249,11 +249,11 @@ This algorithm is a **design proposal**, not functionality in the current `recei
 - [x] Configure ESP-NOW broadcast transmission.
 - [x] Implement ESP-NOW reception and FreeRTOS-based message queuing.
 - [x] Add basic serial diagnostics.
-- [ ] Verify reliable communication using all three physical ESP32 boards.
+- [x] Verify reliable communication using all three physical ESP32 boards.
 - [ ] Confirm the motor driver, power distribution, and complete wiring diagram.
-- [ ] Implement command validation and per-controller state tracking.
-- [ ] Implement differential steering and PWM motor control.
-- [ ] Implement a verified, fail-safe motor stop on lost communication.
+- [x] Implement command validation and per-controller state tracking.
+- [x] Implement differential steering and PWM motor control.
+- [x] Implement a verified, fail-safe motor stop on lost communication.
 - [ ] Test forward/reverse, left/right, combined steering, and recovery after signal loss.
 - [ ] Document the final physical assembly, test results, and demonstration.
 
