@@ -1,6 +1,7 @@
 
 #include <WiFi.h>
 #include <esp_now.h>
+#include <L298NX2.h>
 
 #define WIFI_CHANNEL 6 //The same as controller
 #define FORCE_SHUTDOWN_TIME 5000 //If no data packets have been received for 5000 ms, shut down the car
@@ -124,6 +125,25 @@ void reset_flags(){
   signal_flags[6] = 0; signal_flags[7] = 1; signal_flags[8] = 1;
 }
 
+//Car control algorithm
+#define EN_A 0 //Placeholder values, TBD
+#define IN1_A 0
+#define IN2_A 0
+#define EN_B 0
+#define IN1_B 0
+#define IN2_B 0
+
+L298NX2 myMotors(EN_A, IN1_A, IN2_A, EN_B, IN1_B, IN2_B);
+
+void update_car(){
+  //assumes flags do not contain contradictory information
+  //after running all the checks
+
+  //Decompose flags into per-motor intentions.
+  
+}
+
+
 void loop() {
   ReceivedMessage msg;
   if(millis() - last_packet_receive_time <= FORCE_SHUTDOWN_TIME){
@@ -137,7 +157,7 @@ void loop() {
 
       /*CAR CONTROLLER LOGIC HERE*/
       update_flags(msg.id);
-      //TBD: control the car
+      update_car();
     }
   }
   else{
@@ -145,5 +165,6 @@ void loop() {
     //SAFETY precaution: No packets received in fixed period of time, controller may be down
     //Shutdown the car or stop the car
     reset_flags();
+    update_car();
   }
 }
