@@ -96,31 +96,18 @@ void update_flags(int msg){
 }
 
 void set_flag(bool forward, bool backward, bool left, bool right){
-  //debug function
-  if (forward){
-    signal_flags[TURN_MOTOR_FORWARD_FLAG] = 1;
-    signal_flags[DONT_TURN_MOTOR_FORWARD_FLAG] = 0;
-    signal_flags[TURN_MOTOR_BACKWARD_FLAG] = 0;
-    signal_flags[DONT_TURN_MOTOR_BACKWARD_FLAG] = 1;
-  }
-  if(backward){
-    signal_flags[TURN_MOTOR_FORWARD_FLAG] = 0;
-    signal_flags[DONT_TURN_MOTOR_FORWARD_FLAG] = 1;
-    signal_flags[TURN_MOTOR_BACKWARD_FLAG] = 1;
-    signal_flags[DONT_TURN_MOTOR_BACKWARD_FLAG] = 0;
-  }
-  if(left){
-    signal_flags[STEER_LEFT_FLAG] = 1;
-    signal_flags[DONT_STEER_LEFT_FLAG] = 0;
-    signal_flags[STEER_RIGHT_FLAG] = 0;
-    signal_flags[DONT_STEER_RIGHT_FLAG] = 1;
-  }
-  if(right){
-    signal_flags[STEER_LEFT_FLAG] = 0;
-    signal_flags[DONT_STEER_LEFT_FLAG] = 1;
-    signal_flags[STEER_RIGHT_FLAG] = 1;
-    signal_flags[DONT_STEER_RIGHT_FLAG] = 0;
-  }
+  signal_flags[TURN_MOTOR_FORWARD_FLAG] = forward;
+  signal_flags[DONT_TURN_MOTOR_FORWARD_FLAG] = !forward;
+
+  signal_flags[TURN_MOTOR_BACKWARD_FLAG] = backward;
+  signal_flags[DONT_TURN_MOTOR_BACKWARD_FLAG] = !backward;
+
+  // Left / right
+  signal_flags[STEER_LEFT_FLAG] = left;
+  signal_flags[DONT_STEER_LEFT_FLAG] = !left;
+
+  signal_flags[STEER_RIGHT_FLAG] = right;
+  signal_flags[DONT_STEER_RIGHT_FLAG] = !right;
 }
 
 void reset_flags(){
@@ -132,14 +119,15 @@ void reset_flags(){
 //===========================================================
 // Car control algorithm
 //===========================================================
-#define EN_A 0 //Placeholder values, TBD
-#define IN1_A 0
-#define IN2_A 0
-#define EN_B 0
-#define IN1_B 0
-#define IN2_B 0
+//#define EN_A 0 //Placeholder values, TBD
+#define IN1_A 33 //In 1
+#define IN2_A 25 //In 2
+//#define EN_B 0
+#define IN1_B 26 //In 3
+#define IN2_B 27 //In 4
 
-L298NX2 myMotors(EN_A, IN1_A, IN2_A, EN_B, IN1_B, IN2_B);
+//L298NX2 myMotors(EN_A, IN1_A, IN2_A, EN_B, IN1_B, IN2_B);
+L298NX2 myMotors(IN1_A, IN2_A, IN1_B, IN2_B);
 
 //---------- Tunable parameters ----------
 #define SPEED_THRESHOLD   200  // Max |speed| for forward AND backward (0..255), same value both ways.
@@ -216,30 +204,46 @@ void update_car(){
   bool drive_backward = signal_flags[TURN_MOTOR_BACKWARD_FLAG] && !signal_flags[DONT_TURN_MOTOR_BACKWARD_FLAG];
   bool steer_left     = signal_flags[STEER_LEFT_FLAG]          && !signal_flags[DONT_STEER_LEFT_FLAG];
   bool steer_right    = signal_flags[STEER_RIGHT_FLAG]         && !signal_flags[DONT_STEER_RIGHT_FLAG];
-
-  MotorIndex motors[2] = {MOTOR_A, MOTOR_B};
-
-  for (int i = 0; i < 2; i++) {
-    MotorIndex m  = motors[i];
-    int speed     = motor_speed[m];
-    bool cutMotor = is_left_motor(m) ? steer_left : steer_right; // steering releases this side's motor
-
-    if (cutMotor) {
-      // Steering: let this motor spin down; the car turns toward this side.
-      speed = coast_toward_zero(speed);
-    } else if (drive_forward) {
-      // Accelerate forward unless already at/above the (positive) threshold.
-      speed = step_toward(speed,  SPEED_THRESHOLD, ACCEL_STEP);
-    } else if (drive_backward) {
-      // Accelerate backward unless already at/below the (negative) threshold.
-      speed = step_toward(speed, -SPEED_THRESHOLD, ACCEL_STEP);
-    } else {
-      // No input for this motor: turn it off, friction slows it to 0.
-      speed = coast_toward_zero(speed);
+  bool do_nothing     = !drive_forward && !drive_backward && !steer_left && !steer_right;
+  if (do_nothing){
+    apply_motor(MOTOR_A, 0);
+    apply_motor(MOTOR_B, 0);
+  }
+  if (drive_forward){
+    if (steer_left) {
+      apply_motor(MOTOR_A, 200);
+      apply_motor(MOTOR_B, 0);
     }
-
-    motor_speed[m] = speed;
-    apply_motor(m, speed);
+    else if (steer_right){
+      apply_motor(MOTOR_A, 0);
+      apply_motor(MOTOR_B, 200);
+    }
+    else {
+      apply_motor(MOTOR_A, 200);
+      apply_motor(MOTOR_B, 200);
+    }
+  }
+  else if (drive_backward){
+    if (steer_left){
+      apply_motor(MOTOR_A, -200);
+      apply_motor(MOTOR_B, 0);  
+    }
+    else if (steer_right) {
+      apply_motor(MOTOR_A, 0);
+      apply_motor(MOTOR_B, -200);  
+    }
+    else {
+      apply_motor(MOTOR_A, -200);
+      apply_motor(MOTOR_B, -200);
+    }
+  }
+  else if (steer_left) {
+    apply_motor(MOTOR_A, 200);
+    apply_motor(MOTOR_B, 0);
+  }
+  else if (steer_right) {
+    apply_motor(MOTOR_A, 0);
+    apply_motor(MOTOR_B, 200);
   }
 }
 int change_interval = 2000;
@@ -247,51 +251,67 @@ int last_change = 0;
 
 //Functions to change
 void change_1(){ //forward
+  Serial.println("Forward");
   set_flag(1, 0, 0, 0);
 }
 void change_2(){ //steer
+  Serial.println("Steer");
   set_flag(0, 0, 0, 0);
 }
 void change_3(){ //backward
+  Serial.println("Backward");
   set_flag(0, 1, 0, 0);
 }
 void change_4(){ //steer
+  Serial.println("Steer");
   set_flag(0, 0, 0, 0);
 }
 void change_5(){ //forward, left
+  Serial.println("Forward Left");
   set_flag(1, 0, 1, 0);
 }
 void change_6(){ //steer
+  Serial.println("Steer");
   set_flag(0, 0, 0, 0);
 }
 void change_7(){ //forward, right
+  Serial.println("Forward Right");
   set_flag(1, 0, 0, 1);
 }
 void change_8(){ //steer
+  Serial.println("Steer");
   set_flag(0, 0, 0, 0);
 }
 void change_9(){ //backward, left
+  Serial.println("Backward Left");
   set_flag(0, 1, 1, 0);
 }
 void change_10(){ //steer
+  Serial.println("Steer");
   set_flag(0, 0, 0, 0);
 }
 void change_11(){ //backward, right
+  Serial.println("Backward Right");
   set_flag(0, 1, 0, 1);
 }
 void change_12(){ //steer
+  Serial.println("Steer");
   set_flag(0, 0, 0, 0);
 }
 void change_13(){ //left
+  Serial.println("Left");
   set_flag(0, 0, 1, 0);
 }
 void change_14(){ //right
+  Serial.println("Right");
   set_flag(0, 0, 0, 1);
 }
 void change_15(){ //forward, left
+  Serial.println("Forward Left");
   set_flag(1, 0, 1, 0);
 }
 void change_16(){ //backward, right
+  Serial.println("Backward Right");
   set_flag(0, 1, 0, 1);
 }
 void (*changes[]) () = {change_1, change_2, change_3, change_4, change_5, change_6, change_7, change_8, change_9, change_10, change_11, change_12, change_13, change_14, change_15, change_16};
@@ -322,4 +342,5 @@ void loop() {
     changes[change_param++]();
     if (change_param >= 16) change_param = 0;
   }
+  update_car();
 }

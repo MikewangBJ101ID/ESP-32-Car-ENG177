@@ -65,9 +65,9 @@ ESP-32-Car-ENG177/
 ├── controller/
 │   └── controller.ino   # Transmitter firmware for either controller
 ├── receiver/
-│   └── receiver.ino     # ESP-NOW receiver and message queue
-│   └── receiver_v2.ino  # The vibed complete car control program to be tested
-│   └── test_car.ino     # The program for testing the motor control algorithm
+│   └── receiver.ino     # Receiver-side protocol testing program
+│   └── receiver_v2.ino  # The complete vehicle control program
+│   └── test_car.ino     # Car control testing program
 ├── LICENSE              # MIT License
 └── README.md            # Project documentation
 ```
@@ -139,7 +139,19 @@ The current `controller/controller.ino` sketch uses **active-low inputs** with i
 
 Wire each button between its GPIO input and GND. No external pull-up resistor is required for the current `INPUT_PULLUP` configuration.
 
-**Important:** The vehicle-side motor-driver pinout has not been defined in this repository. Do not assume that the controller GPIO assignments are motor-control pins.
+~~**Important:** The vehicle-side motor-driver pinout has not been defined in this repository. Do not assume that the controller GPIO assignments are motor-control pins.~~
+
+## Car Wiring
+If the motor can run at around 4.7 volts, then we do not need any additional battery individually supplied to the car. If not, we may need individual batteries connected to the `12V` port of the board.
+
+| Connection | ESP32 Pin | Behavior|
+|---|---|---|
+| EN_A | Leave jumper in place | ENABLE pin of motor A |
+| IN_1 | `IN1_A` | Control pin 1 of motor 1 |
+| IN_2 | `IN2_A` | Control pin 2 of motor 1 |
+| IN_3 | `IN1_B` | Control pin 1 of motor 2 |
+| IN_4 | `IN2_B` | Control pin 2 of motor 2 |
+
 
 ## Getting Started
 
@@ -181,7 +193,7 @@ Do not leave both controllers set to `NODE_ID 1`; their command ranges would ove
 
 1. Open `receiver/receiver_v2.ino` in Arduino IDE.
 2. Select the vehicle ESP32 board and serial port.
-3. Compile and upload the sketch.
+3. **Copy and paste the code in the file `receiver_v2.ino` into a new, separated IDE window and then** compile and upload the sketch.
 4. Open its Serial Monitor at **115200 baud**.
 
 All three ESP32 devices must operate on the same Wi-Fi channel, currently **channel 6**.
@@ -237,7 +249,7 @@ This algorithm is a **design proposal**, not functionality in the current `recei
 ## Known Limitations
 
 - ~~The receiver has **no implemented motor-control logic**.~~ In progress
-- The configured 5-second timeout does **not** actuate a motor shutdown.
+- ~~The configured 5-second timeout does **not** actuate a motor shutdown.~~ Voltage tested to drop to 0 immediately.
 - Controller messages are broadcasts with **no encryption or application-level sender authentication**.
 - The receiver does not yet filter unexpected command values or verify the source MAC address.
 - The receive callback may drop packets if the queue is full; these drops are not currently logged.
@@ -256,7 +268,7 @@ This algorithm is a **design proposal**, not functionality in the current `recei
 - [x] Implement command validation and per-controller state tracking.
 - [x] Implement differential steering and PWM motor control.
 - [x] Implement a verified, fail-safe motor stop on lost communication.
-- [ ] Test forward/reverse, left/right, combined steering, and recovery after signal loss.
+- [x] Test forward/reverse, left/right, combined steering, and recovery after signal loss.
 - [ ] Document the final physical assembly, test results, and demonstration.
 
 Completed checkboxes indicate features visible in the committed source code or repository, **not** successful validation on the assembled car.
