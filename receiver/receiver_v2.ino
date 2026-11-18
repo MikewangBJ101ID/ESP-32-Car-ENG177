@@ -111,12 +111,16 @@ void setup() {
 #define DONT_TURN_MOTOR_BACKWARD_FLAG 7
 #define DONT_STEER_RIGHT_FLAG 8
 bool signal_flags[9] = {0, 0, 0, 1, 1, 0, 0, 1, 1}; //initially the car should be stationary
-
+int paired[9] = {0, 3, 4, 1, 2, 7, 8, 5, 6};
 void update_flags(int msg){
   int digit_1 = msg / 10;
   int digit_2 = msg % 10;
   signal_flags[digit_1] = 1;
   signal_flags[digit_2] = 1;
+
+  //Clear
+  signal_flags[paired[digit_1]] = !signal_flags[digit_1];
+  signal_flags[paired[digit_2]] = !signal_flags[digit_2];
 
   //Set conflicting signals to 0, for example: left & right, foward & backward
   if (signal_flags[TURN_MOTOR_FORWARD_FLAG] && signal_flags[TURN_MOTOR_BACKWARD_FLAG]){
@@ -127,6 +131,7 @@ void update_flags(int msg){
     signal_flags[STEER_LEFT_FLAG] = 0;
     signal_flags[STEER_RIGHT_FLAG] = 0;
   }
+  /*
   //The following lines will likely NOT be executed as they are resolved at the controller side
   //But adding them anyways in case of solar radiation flipping bits
   if (signal_flags[TURN_MOTOR_FORWARD_FLAG] && signal_flags[DONT_TURN_MOTOR_FORWARD_FLAG]){
@@ -145,6 +150,8 @@ void update_flags(int msg){
     signal_flags[DONT_STEER_RIGHT_FLAG] = 1;
     signal_flags[STEER_RIGHT_FLAG] = 0;
   }
+  * Screw it we don't like dead code
+  */
 }
 
 void reset_flags(){

@@ -81,7 +81,7 @@ void send_message(int id){
   }
 }
 //Generalizations
-#if NODE_IT == 1
+#if NODE_ID == 1
   #define FIRST_BUTTON_SIGNAL 1 //The signal to be broadcasted when button 1 is pressed.
   #define SECOND_BUTTON_SIGNAL 2 //The signal to be broadcasted when button 2 is pressed.
   #define FIRST_BUTTON_NOT_SIGNAL 3 //The signal to be broadcasted when button 1 is NOT pressed.
