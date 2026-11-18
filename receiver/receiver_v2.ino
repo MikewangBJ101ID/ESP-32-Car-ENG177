@@ -12,23 +12,22 @@
  *         |speed|    -> PWM value written to the enable pin (0..255)
  *
  * HOW THE FLAGS BECOME MOTION
- *   - TURN_MOTOR_FORWARD  -> accelerate forward, capped at +SPEED_THRESHOLD.
- *                            At/above the threshold the motor "does nothing"
- *                            (i.e. it simply holds the capped speed).
- *   - TURN_MOTOR_BACKWARD -> accelerate backward, capped at -SPEED_THRESHOLD
- *                            (same threshold value, opposite direction).
- *   - STEER_LEFT          -> release the LEFT motor: its speed decays to 0
- *                            through simulated friction, so the car veers left
- *                            (it will spin in place if stationary).
+ *   - TURN_MOTOR_FORWARD  -> Write POSITIVE speed to MOTOR at the value of
+ *                            RUNNING_SPEED
+ *   - TURN_MOTOR_BACKWARD -> Write NEGATIVE speed to MOTOR at the value of
+ *                            RUNNING_SPEED
+ *   - STEER_LEFT          -> If curretnly moving forward or stationary,
+ *                            write RUNNING_SPEED to motor B and 0 to
+ *                            motor A. If currently moving backward, write
+ *                            negative RUNNING_SPEED to motor B and 0 to
+ *                            motor A.
  *   - STEER_RIGHT         -> same for the RIGHT motor, car veers right.
- *   - DONT_* flags        -> the affected command is treated as released and
- *                            the motor is turned off; its speed decays to 0,
- *                            like real friction slowing a free-wheeling wheel.
+ *   - DONT_* flags        -> Write 0 to motors.
+ *                            
+ *                            
  *
  * TUNING NOTE
- *   update_car() runs once per received packet, so ACCEL_STEP and
- *   FRICTION_PERCENT are applied per packet. If your controller sends packets
- *   at a very different rate, adjust these two constants accordingly.
+ *   update_car() runs once per received packet.
  */
 
 #include <WiFi.h>
@@ -203,12 +202,12 @@ void update_car(){
   }
   if (drive_forward){
     if (steer_left) {
-      apply_motor(MOTOR_A, RUNNING_SPEED);
-      apply_motor(MOTOR_B, 0);
-    }
-    else if (steer_right){
       apply_motor(MOTOR_A, 0);
       apply_motor(MOTOR_B, RUNNING_SPEED);
+    }
+    else if (steer_right){
+      apply_motor(MOTOR_A, RUNNING_SPEED);
+      apply_motor(MOTOR_B, 0);
     }
     else {
       apply_motor(MOTOR_A, RUNNING_SPEED);
@@ -217,12 +216,12 @@ void update_car(){
   }
   else if (drive_backward){
     if (steer_left){
-      apply_motor(MOTOR_A, -RUNNING_SPEED);
-      apply_motor(MOTOR_B, 0);  
-    }
-    else if (steer_right) {
       apply_motor(MOTOR_A, 0);
       apply_motor(MOTOR_B, -RUNNING_SPEED);  
+    }
+    else if (steer_right) {
+      apply_motor(MOTOR_A, -RUNNING_SPEED);
+      apply_motor(MOTOR_B, 0);  
     }
     else {
       apply_motor(MOTOR_A, -RUNNING_SPEED);
@@ -230,12 +229,12 @@ void update_car(){
     }
   }
   else if (steer_left) {
-    apply_motor(MOTOR_A, RUNNING_SPEED);
-    apply_motor(MOTOR_B, 0);
-  }
-  else if (steer_right) {
     apply_motor(MOTOR_A, 0);
     apply_motor(MOTOR_B, RUNNING_SPEED);
+  }
+  else if (steer_right) {
+    apply_motor(MOTOR_A, RUNNING_SPEED);
+    apply_motor(MOTOR_B, 0);
   } //Yikes, but works!
 }
 
